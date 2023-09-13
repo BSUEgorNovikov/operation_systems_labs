@@ -1,41 +1,50 @@
-#include <stdio.h>
-#include <stdlib.h>
+ï»¿#include <string>
 #include <fstream>
-#include "Employee.h"
 #include <iostream>
-#include <string>
 #include <vector>
+#include <conio.h>
+#include <windows.h>
 
-int main(int argc, char* argv[])
-{
-    std::string bin_file_name = argv[1];
-    std::string report_file_name = argv[2];
-    int paid_for_hour = std::stoi(argv[3]);
+struct employee {
+	int		 num;
+	char	 name[10];
+	double	 hours;
+};
 
-    std::ifstream fin;
-    std::ofstream fout;
+int main(int argc, char* argv[]) {
+	setlocale(LC_ALL, "Ru");
 
-    std::vector<employee> vector_of_workers;
+	employee empl;
+	std::string file_input_name = argv[1];
+	std::string file_output_name = argv[2];
+	int salary_for_hour = std::stoi(argv[3]);
+	std::ifstream file_input;
+	std::ofstream file_output;
+	std::vector<employee> emps;
 
-    fin.open(bin_file_name, std::ios::binary);
-    employee tmp;
-    while (!fin.eof())
-    {
-        fin.read((char*)&tmp, sizeof(tmp));
-        vector_of_workers.push_back(tmp);
-    }
+	file_input.open(file_input_name, std::ios::binary);
+	if (file_input.is_open()) {
+		while (!file_input.eof()) {
+			file_input.read((char*)&empl, sizeof(employee));
+			emps.push_back(empl);
+		}
+		emps.pop_back();
+	}
+	file_input.close();
 
-    fout.open(report_file_name);
-    int amount_of_workers = vector_of_workers.size();
-    fout << "Îò÷¸ò ïî ôàéëó \"" << bin_file_name << "\"\n";
-    fout << "\tID\tÈìÿ\t×àñû\tÇÏ";
-    for (int i = 0; i < amount_of_workers; i++)
-    {
-        fout << "\t" << vector_of_workers[i].num << "\t" << vector_of_workers[i].name << "\t" << vector_of_workers[i].hours << "\t" << vector_of_workers[i].hours * paid_for_hour << "\n";
-    }
+	file_output.open(file_output_name);
+	if (file_output.is_open()) {
+		file_output << "ÐžÑ‚Ñ‡Ñ‘Ñ‚ Ð¿Ð¾ Ñ„Ð°Ð¹Ð»Ñƒ " << file_input_name << "\n";
+		file_output << "ID\tÐ˜Ð¼Ñ\tÐ§Ð°ÑÑ‹\tÐ—Ð°Ñ€Ð¿Ð»Ð°Ñ‚Ð°\n";
+		for (size_t i = 0; i < emps.size(); i++)
+		{
+			file_output << emps[i].num << "\t" << emps[i].name << "\t" << emps[i].hours
+				<< "\t" << salary_for_hour * emps[i].hours << "\n";
+		}
+	}
+	file_output.close();
 
-    fin.close();
-    fout.close();
-
-    return 0;
+	Sleep(100);
+	return 0;
 }
+

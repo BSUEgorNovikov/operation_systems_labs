@@ -1,27 +1,31 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fstream>
-#include "Employee.h"
-#include <iostream>
 #include <string>
+#include <fstream>
+#include <iostream>
 
-int main(int argc, char* argv[])
-{
-    std::string file_name = argv[1];
-    int notes_number = std::stoi(argv[2]);
+struct employee {
+	int		 num;
+	char	 name[10];
+	double	 hours;
+};
 
-    std::ofstream fout;
-    fout.open(file_name, std::ios::binary);
+int main(int argc, char* argv[]) {
+	setlocale(LC_ALL, "Ru");
 
-    employee tmp;
-    for (int i = 0; i < notes_number; i++)
-    {
-        std::cout << "Введите данные работника:\n(Порядок ввода: 1.ID 2.Имя 3.Кол-во отработанных часов)\n";
-        std::cin >> tmp.num >> tmp.name >> tmp.hours;
-        fout.write((char*)&tmp, sizeof(tmp));
-    }
+	employee empl;
+	std::string file_name = argv[1];
+	int number_of_notes = std::stoi(argv[2]);
+	std::ofstream file;
 
-    fout.close();
+	file.open(file_name, std::ios::binary);
+	if (file.is_open()) {
+		for (size_t i = 0; i < number_of_notes; i++)
+		{
+			std::cout << "Введите информацию о рабочем " << i + 1 << ": (ID/Имя/Часы)\n";
+			std::cin >> empl.num >> empl.name >> empl.hours;
+			file.write((char*)&empl, sizeof(employee));
+		}
+	}
+	file.close();
 
-    return 0;
+	return 0;
 }
