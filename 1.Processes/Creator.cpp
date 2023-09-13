@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
 	if (file.is_open()) {
 		for (size_t i = 0; i < number_of_notes; i++)
 		{
-			std::cout << "Ââåäèòå èíôîðìàöèþ î ðàáî÷åì " << i + 1 << ": (ID/Èìÿ/×àñû)\n";
+			std::cout << "Ð’Ð²ÐµÐ´Ð¸Ñ‚Ðµ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸ÑŽ Ð¾ Ñ€Ð°Ð±Ð¾Ñ‡ÐµÐ¼ " << i + 1 << ": (ID/Ð˜Ð¼Ñ/Ð§Ð°ÑÑ‹)\n";
 			std::cin >> empl.num >> empl.name >> empl.hours;
 			file.write((char*)&empl, sizeof(employee));
 		}
