@@ -1,83 +1,95 @@
-﻿#include <iostream>
-#include <string>
 #include <fstream>
-#include <Windows.h>
+#include <iostream>
+#include <windows.h>
 #include <conio.h>
+#include <string>
 
 int main()
 {
-	setlocale(LC_ALL, "ru");
+    setlocale(LC_ALL, "ru");
 
-	std::fstream bin_file;
+    std::string bin_file_name;
+    int amount_of_notes;
+    int amount_of_senders;
 
-	std::cout << "Введите имя бинарного файла: ";
-	std::string file_name;
-	getline(std::cin, file_name);
+    std::cout << "Введите имя бинарного файла:\n";
+    std::cin >> bin_file_name;
+    bin_file_name += ".bin";
 
-	std::cout << "Введите количество записей в файле: ";
-	int amount_of_notes;
-	std::cin >> amount_of_notes;
+    std::cout << "Введите количество записей:\n";
+    std::cin >> amount_of_notes;
 
-	std::cout << "Введите количество процессов Sender: ";
-	int amount_of_senders;
-	std::cin >> amount_of_senders;
+    std::cout << "Введите количество процессов Sender:\n";
+    std::cin >> amount_of_senders;
 
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-	HANDLE* hEventReadyToWork = new HANDLE[amount_of_senders];
-	for (int i = 0; i < amount_of_senders; i++)
-	{
-		std::string creator_cmd = "Sender.exe " + file_name;
-		std::wstring converting_creator_to_lpwstr = std::wstring(creator_cmd.begin(), creator_cmd.end());
-		LPWSTR lpszCreatorProcessCommandLine = &converting_creator_to_lpwstr[0];
+    HANDLE hInputSemaphore = CreateSemaphore(NULL, 0, amount_of_notes, L"Input Semaphore started");
+    HANDLE* hEventStarted = new HANDLE[amount_of_senders];
 
-		ZeroMemory(&si, sizeof(STARTUPINFO));
-		si.cb = sizeof(STARTUPINFO);
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    LPWSTR lpwstrSenderProcessCommandLine;
+    for (int i = 0; i < amount_of_senders; i++)
+    {
+        std::string sender_cmd = "Sender.exe " + bin_file_name;
+        std::wstring converting_sender_to_lpwstr = std::wstring(sender_cmd.begin(), sender_cmd.end());
+        lpwstrSenderProcessCommandLine = &converting_sender_to_lpwstr[0];
 
-		if (!CreateProcess(NULL, lpszCreatorProcessCommandLine, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
-			std::cout << "Sender.exe не был запущен.\n";
-			return GetLastError();
-		}
+        ZeroMemory(&si, sizeof(STARTUPINFO));
+        si.cb = sizeof(STARTUPINFO);
+        if (!CreateProcess(NULL, lpwstrSenderProcessCommandLine, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
+            std::cout << "Процесс Sender не запущен.\n";
+            return GetLastError();
+        }
 
-		hEventReadyToWork[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
-		SetEvent(hEventReadyToWork[i]);
+        hEventStarted[i] = CreateEvent(NULL, FALSE, FALSE, L"Process Started");
 
-		CloseHandle(pi.hProcess);
-	}
+        CloseHandle(pi.hProcess);
+    }
 
-	WaitForMultipleObjects(amount_of_senders, hEventReadyToWork, TRUE, INFINITE);
+    WaitForMultipleObjects(amount_of_senders, hEventStarted, TRUE, INFINITE);
 
-	bin_file.open(file_name, std::ios::in);
-	while (true)
-	{
-		std::cout << "Введите что желаете делать далее?\n\t1 - прочитать сообщение из бинарного файла.\n\t2 - завершить работу.\n";
-		short ans;
-		std::cin >> ans;
+    std::cout << "\nЧто вы желаете делать дальше?\n\t1 - Вывести сообщение из файла.\n\t0 - Завершить выполнение программы.\n";
+    short ans;
+    int counter = 0;
+    std::cin >> ans;
+    std::ifstream file(bin_file_name, std::ios::binary);
+    while (true && counter < amount_of_notes)
+    {
+        if (ans == 1)
+        {
+            char message[20];
 
-		if (ans == 1)
-		{
-			char message[20] = {'\0'};
-			bin_file >> message;
-			std::cout << message;
-		}
-		else if (ans == 2)
-		{
-			std::cout << "Завершение работы...\n";
-			break;
-		}
-		else
-		{
-			std::cout << "Неправильный ввод! Попробуйте ещё раз.\n";
-		}
-	}
+            WaitForSingleObject(hInputSemaphore, INFINITE);
 
-	for (int i = 0; i < amount_of_senders; i++)
-	{
-		CloseHandle(hEventReadyToWork[i]);
-	}
-	CloseHandle(pi.hThread);
-	CloseHandle(pi.hProcess);
-	bin_file.close();
+            file.read(message, sizeof(message));
+            std::cout << "Полученное сообщение: " << message;
 
-	return 0;
+            counter++;
+            if (counter == amount_of_notes)
+                break;
+
+            std::cout << "\nЧто вы желаете делать дальше?\n\t1 - Вывести сообщение из файла.\n\t0 - Завершить выполнение программы.\n";
+            std::cin >> ans;
+        }
+        else if (ans == 0)
+        {
+            std::cout << "Завершение программы...";
+            break;
+        }
+        else
+        {
+            std::cout << "\nНеправильный ввод! Попробуйте ещё раз.\n";
+            std::cin >> ans;
+        }
+    }
+
+    CloseHandle(hInputSemaphore);
+    for (int i = 0; i < amount_of_senders; i++)
+    {
+        CloseHandle(hEventStarted[i]);
+    }
+
+    std::cout << "\n";
+    system("pause");
+    return 0;
 }
