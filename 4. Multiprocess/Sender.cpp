@@ -1,48 +1,57 @@
-﻿#include <iostream>
 #include <fstream>
-#include <Windows.h>
-#include <string>
+#include <windows.h>
+#include <conio.h>
+#include <iostream>
 
 int main(int argc, char* argv[])
 {
-	setlocale(LC_ALL, "ru");
+    setlocale(LC_ALL, "ru");
 
-	std::string file_name = argv[1];
+    std::string file_name = argv[1];
+    std::fstream file;
 
-	std::fstream bin_file;
-	bin_file.open(file_name, std::ios::out | std::ios::app);
+    HANDLE hStartEvent = OpenEvent(EVENT_MODIFY_STATE, FALSE, L"Process Started");
+    HANDLE hInputSemaphore = OpenSemaphore(EVENT_ALL_ACCESS, FALSE, L"Input Semaphore started");
+    SetEvent(hStartEvent);
 
-	HANDLE hEventReadyToWork = OpenEvent(NULL, FALSE, NULL);
-	SetEvent(hEventReadyToWork);
+    std::cout << "Что вы желаете cделать?\n\t1 - Ввести сообщение.\n\t0 - Завершить выполнение процесса.\n";
+    short ans;
+    std::cin >> ans;
 
-	while (true)
-	{
-		std::cout << "Введите что желаете делать далее?\n\t1 - записать сообщение в бинарный файл.\n\t2 - завершить работу.\n";
-		short ans;
-		std::cin >> ans;
+    while (true)
+    {
+        if (ans == 1)
+        {
+            file.open(file_name, std::ios::binary | std::ios::out | std::ios::app);
+            char message[20];
+            std::cout << "Введите сообщение:\n";
+            std::cin >> message;
+            
+            if (ReleaseSemaphore(hInputSemaphore, 1, NULL) != 1)
+            {
+                std::cout << "Файл полон.";
+                ReleaseSemaphore(hInputSemaphore, 1, NULL);
+            }
+            else
+            {
+                file.write(message, sizeof(message));
+            }
 
-		if (ans == 1)
-		{
-			std::string message;
-			std::cout << "Введите сообщение: ";
-			std::cin >> message;
-			
-			char chstr[20] = {'\0'};
-			strcpy_s(chstr, message.c_str());
+            file.close();
+            std::cout << "\nЧто вы желаете делать дальше?\n\t1 - Ввести сообщение.\n\t0 - Завершить выполнение процесса.\n";
+            std::cin >> ans;
+        }
+        else if (ans == 0)
+        {
+            std::cout << "Завершение процесса...";
+            break;
+        }
+        else
+        {
+            std::cout << "\nIncorrect value!\nInput 1 to write message;\nInput 0 to exit process\n";
+            std::cin >> ans;
+        }
+    }
 
-			bin_file.write(chstr, 20);
-		}
-		else if (ans == 2)
-		{
-			std::cout << "Завершение работы...\n";
-			break;
-		}
-		else
-		{
-			std::cout << "Неправильный ввод! Попробуйте ещё раз.\n";
-		}
-	}
-
-	bin_file.close();
-	return 0;
+    return 0;
 }
