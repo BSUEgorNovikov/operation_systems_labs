@@ -23,6 +23,7 @@ int main()
     std::cin >> amount_of_senders;
 
     HANDLE hInputSemaphore = CreateSemaphore(NULL, 0, amount_of_notes, L"Input Semaphore started");
+    HANDLE hOutputSemaphore = CreateSemaphore(NULL, amount_of_notes, amount_of_notes, L"Output Semaphore started");
     HANDLE* hEventStarted = new HANDLE[amount_of_senders];
 
     STARTUPINFO si;
@@ -50,23 +51,19 @@ int main()
 
     std::cout << "\nЧто вы желаете делать дальше?\n\t1 - Вывести сообщение из файла.\n\t0 - Завершить выполнение программы.\n";
     short ans;
-    int counter = 0;
     std::cin >> ans;
     std::ifstream file(bin_file_name, std::ios::binary);
-    while (true && counter < amount_of_notes)
+    while (true)
     {
         if (ans == 1)
         {
             char message[20];
 
             WaitForSingleObject(hInputSemaphore, INFINITE);
+            ReleaseSemaphore(hOutputSemaphore, 1, NULL);
 
             file.read(message, sizeof(message));
             std::cout << "Полученное сообщение: " << message;
-
-            counter++;
-            if (counter == amount_of_notes)
-                break;
 
             std::cout << "\nЧто вы желаете делать дальше?\n\t1 - Вывести сообщение из файла.\n\t0 - Завершить выполнение программы.\n";
             std::cin >> ans;
@@ -84,10 +81,13 @@ int main()
     }
 
     CloseHandle(hInputSemaphore);
+    CloseHandle(hOutputSemaphore);
     for (int i = 0; i < amount_of_senders; i++)
     {
         CloseHandle(hEventStarted[i]);
     }
+    file.clear();
+    file.close();
 
     std::cout << "\n";
     system("pause");
