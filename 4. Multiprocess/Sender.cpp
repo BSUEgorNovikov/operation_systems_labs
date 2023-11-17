@@ -12,6 +12,7 @@ int main(int argc, char* argv[])
 
     HANDLE hStartEvent = OpenEvent(EVENT_MODIFY_STATE, FALSE, L"Process Started");
     HANDLE hInputSemaphore = OpenSemaphore(EVENT_ALL_ACCESS, FALSE, L"Input Semaphore started");
+    HANDLE hOutputSemaphore = OpenSemaphore(EVENT_ALL_ACCESS, FALSE, L"Output Semaphore started");
     SetEvent(hStartEvent);
 
     std::cout << "Что вы желаете cделать?\n\t1 - Ввести сообщение.\n\t0 - Завершить выполнение процесса.\n";
@@ -23,19 +24,21 @@ int main(int argc, char* argv[])
         if (ans == 1)
         {
             file.open(file_name, std::ios::binary | std::ios::out | std::ios::app);
+
             char message[20];
+
             std::cout << "Введите сообщение:\n";
             std::cin >> message;
-            
+
             if (ReleaseSemaphore(hInputSemaphore, 1, NULL) != 1)
             {
                 std::cout << "Файл полон.";
                 ReleaseSemaphore(hInputSemaphore, 1, NULL);
             }
-            else
-            {
-                file.write(message, sizeof(message));
-            }
+
+            WaitForSingleObject(hOutputSemaphore, INFINITE);
+            
+            file.write(message, sizeof(message));
 
             file.close();
             std::cout << "\nЧто вы желаете делать дальше?\n\t1 - Ввести сообщение.\n\t0 - Завершить выполнение процесса.\n";
@@ -48,7 +51,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            std::cout << "\nIncorrect value!\nInput 1 to write message;\nInput 0 to exit process\n";
+            std::cout << "\nНеправильный ввод!\nПопробуйте ещё раз.";
             std::cin >> ans;
         }
     }
